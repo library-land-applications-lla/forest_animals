@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS Animals (
+id INT AUTO_INCREMENT, 
+name VARCHAR(80) UNIQUE,
+info TEXT,
+image_url VARCHAR(255),
+PRIMARY KEY(id));
+
+
