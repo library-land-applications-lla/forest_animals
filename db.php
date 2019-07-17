@@ -14,8 +14,13 @@
 	                      ."WHERE table_schema = '". $config['db_name']."'";
 	$set_identifier = mysqli_query($connection, $tables_exist_check);
 	$result = mysqli_fetch_all($set_identifier, MYSQLI_BOTH);
+	
 	if (!$result[0]["num_tables"]) {
-		$queries = file_get_contents('sql/create_db.sql');
-		mysqli_query($connection, $queries);
+		$create_tables = file_get_contents('sql/create_db.sql');
+		mysqli_query($connection, $create_tables);
+		$populate_tables = file_get_contents('sql/populate_db.sql');
+		if(!mysqli_multi_query($connection, $populate_tables)) {
+			echo mysqli_error($connection);
+		}
 	}
 ?>

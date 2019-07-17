@@ -7,6 +7,7 @@
 	                        .'id INT AUTO_INCREMENT, '
 	                        .'name VARCHAR(80) UNIQUE, '
 	                        .'info TEXT, '
+	                        .'image_url, '
 	                        .'PRIMARY KEY(id))';
     if (mysqli_query($connection, $create_animals_table)) {
     	echo "Success";

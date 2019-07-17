@@ -1,3 +1,42 @@
 {% extends 'base.html' %}
-{% block conent %}
+{% block content %}
+
+{% for animal in animals %}
+    {% if loop.index is divisible by(4) or loop.index == 1 %}
+    	<div class="card-group">
+    {% endif %}
+        <div class="card">
+        	<div class="embed-responsive embed-responsive-16by9">
+	        <img src="{{ animal.image_url }}" class="card-img-top embed-responsive-item" alt="Image of {{ animal.name }}">
+		    <div class="card-body embed-responsive-item">
+		      <h5 class="card-title">
+		      	<!-- Button trigger modal -->
+				<button type="button" class="btn btn-secondary" data-toggle="modal" data-target="#{{ animal.name }}-modal">
+					{{ animal.name }}
+				</button>
+		      </h5>
+
+
+				<!-- Modal -->
+				<div class="modal" id="{{ animal.name }}-modal">
+					<div class="modal-dialog modal-dialog-scrollable" role="document">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">{{ animal.name }}</h5>
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">X</button>
+							</div>
+							<div class="modal-body">
+								<p>{{ animal.info }}</p>
+							</div>
+					    </div>
+					</div>
+				</div> <!-- modal -->
+		    </div> <!-- card-body -->
+		</div>
+        </div> <!-- card -->
+    {% if loop.index is divisible by(3) or loop.index ==  animals|length %}
+    	</div> <!-- card-group -->
+    {% endif %}
+{% endfor %}
+
 {% endblock %}

@@ -24,13 +24,13 @@
             <a class="navbar-brand" href="./">Forest Animals</a>
             <ul class="navbar-nav mr-auto">
                 <li class="nav-item">
-                    <a class="nav-link" href="./learn.php/">Learn</a>
+                    <a class="nav-link" href="./learn.php">Learn</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="./explore/">Explore</a>
+                    <a class="nav-link" href="./explore.php">Explore</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="./play/">Play</a>
+                    <a class="nav-link" href="./play.php">Play</a>
                 </li>
             </ul>
         </div>
@@ -42,8 +42,10 @@
         </div>
     </div>
 
-    {% block content %}
-    {% endblock %}
+    <div class="content">
+        {% block content %}
+        {% endblock %}
+    </div> <!-- content -->
 
     <footer class="footer">
       <div class="container">
