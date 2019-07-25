@@ -32,6 +32,15 @@
                 <li class="nav-item">
                     <a class="nav-link" href="./play.php">Play</a>
                 </li>
+                {% if login_status == true %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="./logout.php">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="./login.php">Login</a>
+                    </li>
+                {% endif %}
             </ul>
         </div>
     </nav>
