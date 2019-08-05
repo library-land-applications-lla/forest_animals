@@ -43,6 +43,12 @@
                 session_start();
                 $_SESSION["loggedin"] = True;
                 $_SESSION["username"] = $username_value;
+                if ($username_value == "admin") {
+                    $_SESSION["admin"] = True;
+                }
+                 else {
+                    $_SESSION["admin"] = False;
+                 }
         		header("location: index.php");
         	}
         	else {
