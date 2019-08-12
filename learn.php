@@ -11,10 +11,9 @@
     mysqli_next_result($connection);
 
     for ($i = 0; $i < count($animals_data); $i++) {
-    	$animals_data[$i]['image_url'] = $config['app_root']
-    	                                 . $config['images_location']
+        $animals_data[$i]['image_url'] = $config['images_location']
     	                                 . $animals_data[$i]['image_url'];
-    	$animals_data[$i]['info_url'] = $config['info_location']
+    	  $animals_data[$i]['info_url'] = $config['info_location']
                                         . $animals_data[$i]['info_url'];
         $animals_data[$i]['index'] = $i;
         if (file_exists($animals_data[$i]['info_url'])) {
@@ -22,8 +21,7 @@
         }
     }
 
-    if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
+    function add_new_animal($config, $connection) {
         // Check if all fields are filled
         if (!isset($_POST['animal_name']) || empty(trim($_POST['animal_name'], ' '))
             || !isset($_POST['animal_description']) || empty(trim($_POST['animal_description'], ' '))
@@ -34,6 +32,7 @@
                 Header('Location: ./error.php');              
         }
         
+        $_POST['animal_name'] = str_replace(" ", "_", strtolower($_POST['animal_name']));
 
         // Check if animal already exists
         $info_filename = $config['info_location'] . $_POST['animal_name'] . ".txt";
@@ -67,59 +66,113 @@
        // If no errors, add animal to database
        $add_animal_query = 'INSERT INTO Animals (name, info_url, image_url) VALUES (?, ?, ?)';
         if ($add_animal_stmt = mysqli_prepare($connection, $add_animal_query)) {
-            mysqli_stmt_bind_param($add_animal_stmt, "sss", $_POST["animal_name"], $info_filename, $image_filename);
+            mysqli_stmt_bind_param($add_animal_stmt,"sss", $_POST["animal_name"],
+                                   basename($info_filename), $_FILES['upload_image']['name']);
             $add_animal_stmt->execute();
             while(mysqli_next_result($connection)){;}
+
+            file_put_contents($info_filename, $_POST['animal_description']);
+
+
+            if (!move_uploaded_file($_FILES['upload_image']['tmp_name'],
+                                    $config['images_location'] . $_FILES['upload_image']['name'])
+                ) {
+                   $_SESSION['error'] = array('message' => 'Failed to upload image.',
+                                             'return_page_url' => './learn.php',
+                                             'return_button_text' => 'Try again');     
+                   Header('Location: ./error.php');              
+            }
+
+            $_SESSION['transition'] = array("message" => "Animal '" . $_POST['animal_name'] . "' added.",
+                                            "return_button_text" => "Add another animal.",
+                                            "return_page_url" => "./learn.php");
+            Header('Location: ./transition.php');
         }
     }
 
+    function edit_animal($config, $connection, $animals_data) {;
+      $prev_animal_data = $animals_data[$_POST['array_index']];
+
+      $new_info_filepath = $_POST['animal_name'] . ".txt";
+      $new_image_filepath = $_POST['animal_name'] . "." . pathinfo($prev_animal_data['image_url'], PATHINFO_EXTENSION);
+
+      // Check if animal already exists
+      if (file_exists($new_info_filepath)) {
+          $_SESSION['error'] = array('message' => 'The animal ' . $_POST['animal_name'] . ' is already included. Try a different name',
+                                     'return_page_url' => './learn.php',
+                                     'return_button_text' => 'Return');
+          Header('Location: ./error.php');
+      }
+
+      // Rename info file
+      if (!rename($prev_animal_data['info_url'], $config['info_location'] . $new_info_filepath)) {
+          $_SESSION['error'] = array('message' => 'Unable to rename info file from ' . " "
+                                     . $prev_animal_data['info_url'] . " to " . $config['info_location'] . $new_info_filepath,
+                                     'return_page_url' => './learn.php',
+                                     'return_button_text' => 'Return');
+          Header('Location: ./error.php');
+      }
+
+      // Rename image file
+      if (!rename($prev_animal_data['image_url'], $config['images_location'] . $new_image_filepath))
+      {
+          $_SESSION['error'] = array('message' => 'Unable to rename image file ' . "/" . $prev_animal_data['image_url']
+                                                  . " to " . $new_image_filepath,
+                                     'return_page_url' => './learn.php',
+                                     'return_button_text' => 'Return');
+          Header('Location: ./error.php');
+      }
+
+
+      // Update table to reflect file and animal name changes
+      $change_name_query = "UPDATE Animals SET name = ?, info_url = ?, image_url = ? WHERE name = ?";
+      if ($change_name_stmt = mysqli_prepare($connection, $change_name_query)) {
+          mysqli_stmt_bind_param($change_name_stmt, "ssss", $_POST['animal_name'],
+                                 $new_info_filepath,
+                                 $new_image_filepath,
+                                 $prev_animal_data['name']);
+          $change_name_stmt->execute();
+          while(mysqli_next_result($connection)){;}
+      }
+      else {
+        echo mysqli_error($connection);
+      }
+
+      // Update animal info
+      if (file_put_contents($config['info_location'] . $new_info_filepath, $_POST['edit_info_textarea'])) {
+          $_SESSION['transition'] = array("message" => "Animal '" . $_POST['animal_name'] . "' successfully edited",
+                                          "return_button_text" => "Continue",
+                                          "return_page_url" => "./learn.php");     
+          Header('Location: ./transition.php');
+      }
+      else {
+          $_SESSION['error'] = array("message" => "Failed to save edits for " . $_POST['animal_name'],
+                                     "return_button_text" => "Return",
+                                     "return_page_url" => "./learn.php");
+          Header('Location: ./error.php');
+      }
+    }
+
+
+    // Handle requests to add or edit animals accordingly
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
+      if (isset($_POST['add_animal'])) {
+        add_new_animal($config, $connection);
+      }
+      if (isset($_POST['edit_animal'])) {
+        edit_animal($config, $connection, $animals_data);
+      }
+      if (isset($_POST['delete_animal'])) {
+        $_SESSION['edited_animal'] = $animals_data[$_POST['array_index']];
+        Header('Location: ./confirm_delete.php');
+      }
+
+    }
+
     echo $twig->render('learn.html',
-    	               ['page_name' => 'Learn',
+    	                 ['page_name' => 'Learn',
                         'login_status' => isset($_SESSION['loggedin']),
-    	                'animals' => $animals_data,
+    	                  'animals' => $animals_data,
                         'is_admin' => isset($_SESSION['loggedin']) ? $_SESSION["admin"]:False]);
-
-/*
-        if (isset($_POST["edit_info_textarea"])) {
-            file_put_contents($animals_data[$_POST["array_index"]]['info_url'], $_POST["edit_info_textarea"]);
-            #Header('Location: '.$_SERVER['PHP_SELF']);
-        }
-        else if (isset($_POST["animal_name"])
-            && isset($_POST["animal_info"]) && isset($_POST["animal_image"])) {
-            $animal_name = $_POST["animal_name"];
-            $animal_info = $_POST["animal_info"];
-            $target_file = $config["app_root"]
-                           .$config["images_location"]
-                           .str_replace(" ", "_", $animal_name);
-            #More to do
-        }
-        else {
-            $_SESSION["error"] = array("message" => "Please fill all fields before submitting.",
-                                       "return_page_url" => "./learn.php",
-                                       "return_button_text" => "Return",);
-            Header('Location: ./error.php');
-        } 
-
-        // Check if animal exists already
-       if (isset($_POST[animal_name])) {
-            $info_file = $config['info_location'] . $animal_name;
-            if (file_exists($info_file)) {
-                $_SESSION['error'] = array('message' => 'Animal already included.',
-                                           'return_page_url' => './learn.php',
-                                           'return_button_text' => 'Return');
-                Header('Location: ./error.php');
-            }
-       }
-       // Check if image exists already
-       if (isset($_POST[upload_image])) {
-            $image_file = $config['images_location'] . $_FILES['upload_image'];
-            if (file_exists($image_file)) {
-                $_SESSION['error'] = array('message' => 'File: ' . $image_File . ' already exists.',
-                                           'return_page_url' => './learn.php',
-                                           'return_button_text' => 'Return');
-                Header('Location: ./error.php');
-            }
-       }
-*/
 
 ?>
